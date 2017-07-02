@@ -10,43 +10,38 @@ import  NotFound  from '../ui/NotFound';
 
 //window.browserHistory = browserHistory;
 
-const unauthenticatedPages = ['/','/signup'];
-const authenticatedPages = ['/Dashboard'];
-const onEnterPublicPage = () => {
-  if (Meteor.userId()){
-    browserHistory.replace('/Dashboard');
-  }
-};
-const onEnterPrivatePage = () => {
-  if (!Meteor.userId()){
-    browserHistory.replace('/');
-  }
-};
 const onEnterNotePage = (nextState) => {
-  if (!Meteor.userId()){
-    browserHistory.replace('/');
-  } else {
-    Session.set('selectedNoteId', nextState.params.id);
-  }
+  Session.set('selectedNoteId', nextState.params.id);
 };
-export const onAuthChange = (isAuthenticated) => {
-  const pathname = browserHistory.getCurrentLocation().pathname;
-  const isUnauthenticatedPage = unauthenticatedPages.includes(pathname);
-  const isAuthenticatedPage = authenticatedPages.includes(pathname);
+const onLeaveNotePage = (nextState) => {
+  Session.set('selectedNoteId', undefined);
+};
+export const onAuthChange = (isAuthenticated, currentPagePrivacy) => {
+  const isUnauthenticatedPage = currentPagePrivacy === 'unauth';
+  const isAuthenticatedPage = currentPagePrivacy === 'auth';
 
   if (isUnauthenticatedPage && isAuthenticated) {
     browserHistory.replace('/Dashboard');
   } else if (isAuthenticatedPage && !isAuthenticated) {
     browserHistory.replace('/');
   }
+};
 
+export const globalOnChange = (prevState, nextState) => {
+  globalOnEnter(nextState);
+};
+export const globalOnEnter = (nextState) => {
+  const lastRoute = nextState.routes[nextState.routes.length - 1];
+  Session.set('currentPagePrivacy', lastRoute.privacy);
 };
 export const routes = (
   <Router history={browserHistory}>
-    <Route path="/" component={Login} onEnter={onEnterPublicPage}/>
-    <Route path="/signup" component={Signup} onEnter={onEnterPublicPage}/>
-    <Route path="/Dashboard" component={Dashboard} onEnter={onEnterPrivatePage}/>
-    <Route path="/Dashboard/:id" component={Dashboard} onEnter={onEnterNotePage}/>
-    <Route path="*" component={NotFound} onEnter={onEnterPrivatePage}/>
+    <Route onEnter={globalOnEnter} onChange={globalOnChange}>
+      <Route path="/" component={Login} privacy="unauth" />
+      <Route path="/signup" component={Signup} privacy="unauth" />
+      <Route path="/Dashboard" component={Dashboard} privacy="auth" />
+      <Route path="/Dashboard/:id" component={Dashboard} privacy="auth" onEnter={onEnterNotePage} onLeave={onLeaveNotePage}/>
+      <Route path="*" component={NotFound}/>
+    </Route>
   </Router>
 );

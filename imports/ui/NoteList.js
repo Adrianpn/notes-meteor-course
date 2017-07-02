@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
 import { Session } from 'meteor/session';
@@ -28,7 +29,6 @@ NoteList.propTypes = {
 export default createContainer(() => {
   const selectedNoteId = Session.get('selectedNoteId');
   Meteor.subscribe('notes');
-
 
 
   return {
